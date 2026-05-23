@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
+env/
+*.egg
+
+# Rust
+target/
+*.rs.bk
+
+# ML / RL
+checkpoints/
+models/
+runs/
+logs/
+*.pth
+*.pt
+*.onnx
+*.pb
+tensorboard/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb
+
+# PyO3
+*.so
+
+# Claude Code
+.claude/settings.local.json
