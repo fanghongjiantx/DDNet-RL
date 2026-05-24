@@ -10,9 +10,12 @@ use twmap::ndarray::Axis;
 use twmap::vek::Vec2;
 use twmap::TwMap;
 
-// Tile type discriminants (from twgame::map::Tile, private module)
-const TILE_KILL: u8 = 2;
-const TILE_FINISH: u8 = 34;
+// Tile type discriminants from twgame::map::Tile enum (#[repr(u8)])
+// Order: Air=0, Collision=1, Unhookable=2, Kill=3, Freeze=4, ...
+//         ... StartLine=49, FinishLine=50
+const TILE_KILL: u8 = 3;
+const TILE_START: u8 = 49;
+const TILE_FINISH: u8 = 50;
 
 // DDNet default tuning values
 const GROUND_JUMP_IMPULSE: f32 = 13.2;
@@ -29,6 +32,8 @@ pub struct LiteEnv {
     prev_hook_pressed: bool,
     jump_count: i32,
     max_jumps: i32,
+    start_tick: Option<u64>,
+    finish_tick: Option<u64>,
 }
 
 #[pymethods]
@@ -78,6 +83,8 @@ impl LiteEnv {
             prev_hook_pressed: false,
             jump_count: 2,
             max_jumps: 2,
+            start_tick: None,
+            finish_tick: None,
         })
     }
 
@@ -99,6 +106,8 @@ impl LiteEnv {
         self.prev_hook_pressed = false;
         self.jump_count = 2;
         self.max_jumps = 2;
+        self.start_tick = None;
+        self.finish_tick = None;
     }
 
     /// Step one tick.
@@ -191,6 +200,17 @@ impl LiteEnv {
             dead = self.map.game_layer[[cy, cx]] as u8 == TILE_KILL;
         }
 
+        // Check start line crossing
+        if self.start_tick.is_none() {
+            let w = self.map.game_layer.len_of(Axis(1)) as i32;
+            let h = self.map.game_layer.len_of(Axis(0)) as i32;
+            let cx = pos_int.x.max(0).min(w - 1) as usize;
+            let cy = pos_int.y.max(0).min(h - 1) as usize;
+            if self.map.game_layer[[cy, cx]] as u8 == TILE_START {
+                self.start_tick = Some(self.tick_num);
+            }
+        }
+
         // Check finish (game layer + front layer)
         let w = self.map.game_layer.len_of(Axis(1)) as i32;
         let h = self.map.game_layer.len_of(Axis(0)) as i32;
@@ -209,6 +229,10 @@ impl LiteEnv {
                     front[[cy, cx]] as u8 == TILE_FINISH
                 })
                 .unwrap_or(false);
+
+        if finished && self.finish_tick.is_none() {
+            self.finish_tick = Some(self.tick_num);
+        }
 
         (pos_after.x, pos_after.y, vel_after.x, vel_after.y, grounded, dead, finished)
     }
@@ -288,6 +312,33 @@ impl LiteEnv {
     /// Check if a point collides with solid tiles.
     fn is_solid_at(&self, x: f32, y: f32) -> bool {
         self.map.is_solid_tee(Vec2::new(x, y))
+    }
+
+    /// Tick when start line was crossed (None if not yet crossed).
+    #[getter]
+    fn start_tick(&self) -> Option<u64> {
+        self.start_tick
+    }
+
+    /// Tick when finish line was crossed (None if not yet finished).
+    #[getter]
+    fn finish_tick(&self) -> Option<u64> {
+        self.finish_tick
+    }
+
+    /// Completion time in ticks (None if not finished).
+    #[getter]
+    fn completion_ticks(&self) -> Option<u64> {
+        match (self.start_tick, self.finish_tick) {
+            (Some(start), Some(finish)) => Some(finish - start),
+            _ => None,
+        }
+    }
+
+    /// Completion time in seconds (None if not finished).
+    #[getter]
+    fn completion_time(&self) -> Option<f64> {
+        self.completion_ticks().map(|ticks| ticks as f64 / 50.0)
     }
 
     /// Get the hook state: 0=retracted/idle, 1=flying, 2=grabbed

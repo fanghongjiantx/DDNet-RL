@@ -13,14 +13,14 @@ from gymnasium import spaces
 
 from ddnet_rl_rust import LiteEnv
 
-# Tile type constants (matching Rust side)
+# Tile type discriminants (twgame Tile enum order)
 TILE_AIR = 0
 TILE_COLLISION = 1
-TILE_KILL = 2
-TILE_UNHOOKABLE = 3
-TILE_FREEZE = 9
-TILE_START = 33
-TILE_FINISH = 34
+TILE_UNHOOKABLE = 2
+TILE_KILL = 3
+TILE_FREEZE = 4
+TILE_START = 49
+TILE_FINISH = 50
 
 # Action encoding
 # Discrete: 0=nothing, 1=left, 2=right, 3=left+jump, 4=right+jump, 5=jump
@@ -150,6 +150,10 @@ class DDNetEnv(gym.Env):
             "dead": dead,
             "finished": finished,
             "step": self._step_count,
+            "start_tick": self._env.start_tick,
+            "finish_tick": self._env.finish_tick,
+            "completion_ticks": self._env.completion_ticks,
+            "completion_time": self._env.completion_time,
         }
 
         return obs, reward, terminated, truncated, info
