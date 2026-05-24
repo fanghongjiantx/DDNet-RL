@@ -49,6 +49,8 @@ Desktop.ini
 
 # PyO3
 *.so
+*.whl
+*.dll
 
 # Claude Code
 .claude/settings.local.json

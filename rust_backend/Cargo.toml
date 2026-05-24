@@ -1,0 +1,13 @@
+[package]
+name = "ddnet_rl_rust"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+name = "ddnet_rl_rust"
+crate-type = ["cdylib"]
+
+[dependencies]
+twgame = "0.11"
+twmap = "0.14"
+pyo3 = { version = "0.23", features = ["extension-module"] }
